@@ -3,17 +3,18 @@ package floodcontrol
 import (
 	"context"
 	"strconv"
+	"task/internal/storage"
 	"time"
 )
 
 type RateLimiter struct {
-	storage Storage
+	storage storage.Storage
 	limit   int64
 	period  time.Duration
 }
 
-func NewRateLimiter(storage Storage, period time.Duration, limit int64) *RateLimiter {
-	return &RateLimiter{storage: storage, period: period, limit: limit}
+func NewRateLimiter(storage storage.Storage, limit int64, period time.Duration) *RateLimiter {
+	return &RateLimiter{storage: storage, limit: limit, period: period}
 }
 
 func (r *RateLimiter) Check(ctx context.Context, userID int64) (bool, error) {

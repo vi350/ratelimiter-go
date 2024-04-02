@@ -5,7 +5,7 @@ import (
 	redisLibrary "github.com/redis/go-redis/v9"
 	"strconv"
 	"sync"
-	"task/internal/floodcontrol"
+	"task/internal/storage"
 	"time"
 )
 
@@ -24,20 +24,19 @@ type Storage struct {
 }
 
 func New(client Client) *Storage {
-	return NewWithOptions(client, &floodcontrol.StorageOptions{
+	return NewWithOptions(client, &storage.StorageOptions{
 		Prefix: "defpref",
 	})
 }
 
-func NewWithOptions(client Client, options *floodcontrol.StorageOptions) *Storage {
-	storage := &Storage{
+func NewWithOptions(client Client, options *storage.StorageOptions) *Storage {
+	return &Storage{
 		client: client,
 		Prefix: options.Prefix,
 	}
-	return storage
 }
 
-func (s *Storage) Get(ctx context.Context, key string, limit int64, period time.Duration) (floodcontrol.Result, error) {
+func (s *Storage) Get(ctx context.Context, key string, limit int64, period time.Duration) (storage.Result, error) {
 	s.Lock()
 	incr := s.client.Incr(ctx, s.Prefix+key).Val()
 	if incr == 1 {
@@ -45,33 +44,33 @@ func (s *Storage) Get(ctx context.Context, key string, limit int64, period time.
 	}
 	s.Unlock() // можно было использовать defer, но в данном случае лок нужен только на одну строку
 	reached := incr >= limit
-	return floodcontrol.Result{
+	return storage.Result{
 		Remaining: limit - incr,
 		Reached:   reached,
 	}, nil
 }
 
-func (s *Storage) Peek(ctx context.Context, key string, limit int64) (floodcontrol.Result, error) {
+func (s *Storage) Peek(ctx context.Context, key string, limit int64) (storage.Result, error) {
 	s.RLock()
 	val := s.client.Get(ctx, s.Prefix+key)
 	s.RUnlock() // можно было использовать defer, но в данном случае лок нужен только на одну строку
 	incr, err := strconv.ParseInt(val.Val(), 10, 64)
 	if err != nil {
-		return floodcontrol.Result{}, err
+		return storage.Result{}, err
 	}
 	reached := incr >= limit
-	return floodcontrol.Result{
+	return storage.Result{
 		Remaining: limit - incr,
 		Reached:   reached,
 	}, nil
 }
 
-func (s *Storage) Reset(ctx context.Context, key string, limit int64) (floodcontrol.Result, error) {
+func (s *Storage) Reset(ctx context.Context, key string, limit int64) (storage.Result, error) {
 	s.Lock()
 	_, err := s.client.Del(ctx, s.Prefix+key).Result()
 	s.Unlock() // можно было использовать defer, но в данном случае лок нужен только на одну строку
 	if err != nil {
-		return floodcontrol.Result{}, err
+		return storage.Result{}, err
 	}
-	return floodcontrol.Result{Remaining: limit}, nil
+	return storage.Result{Remaining: limit}, nil
 }

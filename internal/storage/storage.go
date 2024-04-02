@@ -1,4 +1,4 @@
-package floodcontrol
+package storage
 
 import (
 	"context"
@@ -19,4 +19,9 @@ type StorageOptions struct {
 	Prefix string
 	// CleanUpInterval это интервал очистки кэша.
 	CleanUpInterval time.Duration
+}
+
+type Result struct {
+	Remaining int64
+	Reached   bool
 }
