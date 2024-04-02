@@ -1,15 +1,12 @@
-package main
+package floodcontrol
 
-import (
-	"context"
-)
+import "context"
 
-func main() {
-
+type Result struct {
+	Remaining int64
+	Reached   bool
 }
 
-// FloodControl интерфейс, который нужно реализовать.
-// Рекомендуем создать директорию-пакет, в которой будет находиться реализация.
 type FloodControl interface {
 	// Check возвращает false если достигнут лимит максимально разрешенного
 	// кол-ва запросов согласно заданным правилам флуд контроля.
