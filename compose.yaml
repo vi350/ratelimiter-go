@@ -1,0 +1,32 @@
+name: floodcontrol
+
+services:
+  floodcontrol-backend:
+    container_name: floodcontrol-backend
+    depends_on:
+      floodcontrol-redis:
+        condition: service_healthy
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: runner
+    volumes:
+      - ./.env:/app/.env
+    environment:
+      - REDIS_HOST=floodcontrol-redis
+    ports:
+      - 8000:8000
+
+  floodcontrol-redis:
+    container_name: floodcontrol-redis
+    image: redis:7-alpine
+    command: >
+      --requirepass ${REDIS_PASS}
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: redis-cli --no-auth-warning -a ${REDIS_PASS} ping | grep PONG
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
